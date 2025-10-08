@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
 import { AnimatedPage } from "@/components/AnimatedPage";
 import { MainNav } from "@/components/layout/MainNav";
-import { AdminGuard, DispatcherGuard, DriverGuard } from "@/components/guards/RoleGuard";
+import { AdminGuard, DispatcherGuard } from "@/components/guards/RoleGuard";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
@@ -107,27 +107,21 @@ export default function App() {
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
                       <AppLayout>
-                        <DriverGuard>
-                          <Dashboard />
-                        </DriverGuard>
+                        <Dashboard />
                       </AppLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/route/:id" element={
                     <ProtectedRoute>
                       <AppLayout>
-                        <DriverGuard>
-                          <RouteOverview />
-                        </DriverGuard>
+                        <RouteOverview />
                       </AppLayout>
                     </ProtectedRoute>
                   } />
                   <Route path="/settings" element={
                     <ProtectedRoute>
                       <AppLayout>
-                        <DriverGuard>
-                          <Settings />
-                        </DriverGuard>
+                        <Settings />
                       </AppLayout>
                     </ProtectedRoute>
                   } />
@@ -143,9 +137,7 @@ export default function App() {
                   <Route path="/profile" element={
                     <ProtectedRoute>
                       <AppLayout>
-                        <DriverGuard>
-                          <UserProfile />
-                        </DriverGuard>
+                        <UserProfile />
                       </AppLayout>
                     </ProtectedRoute>
                   } />
