@@ -19,6 +19,8 @@ import PerformanceReports from "@/pages/PerformanceReports";
 import NotFound from "@/pages/NotFound";
 import ServerError from "@/pages/ServerError";
 import UserProfile from "@/pages/UserProfile";
+import AdminUsers from "@/pages/AdminUsers";
+import Integrations from "@/pages/Integrations";
 
 // React Query client with optimal defaults
 const queryClient = new QueryClient({
@@ -36,8 +38,8 @@ const queryClient = new QueryClient({
 function AppLayout({ children }: { children: React.ReactNode }) {
   // Mock user data - in real app this would come from auth context
   const mockUser = {
-    role: 'dispatcher' as const,
-    name: 'John Dispatcher',
+    role: 'admin' as const,
+    name: 'John Admin',
     avatar: undefined,
     notificationCount: 3,
   };
@@ -106,6 +108,16 @@ export default function App() {
               <Route path="/profile" element={
                 <AppLayout>
                   <UserProfile />
+                </AppLayout>
+              } />
+              <Route path="/admin/users" element={
+                <AppLayout>
+                  <AdminUsers />
+                </AppLayout>
+              } />
+              <Route path="/integrations" element={
+                <AppLayout>
+                  <Integrations />
                 </AppLayout>
               } />
             </Routes>
