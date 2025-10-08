@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { AnimatedPage } from "@/components/AnimatedPage";
 import { MainNav } from "@/components/layout/MainNav";
 import { AdminGuard, DispatcherGuard, DriverGuard } from "@/components/guards/RoleGuard";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Import pages
 import Home from "@/pages/Home";
@@ -22,6 +23,7 @@ import ServerError from "@/pages/ServerError";
 import UserProfile from "@/pages/UserProfile";
 import AdminUsers from "@/pages/AdminUsers";
 import Integrations from "@/pages/Integrations";
+import Help from "@/pages/Help";
 
 // React Query client with optimal defaults
 const queryClient = new QueryClient({
@@ -68,11 +70,12 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="routeiq-theme">
-        <BrowserRouter>
-          <AnimatedPage>
-            <Routes>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="system" storageKey="routeiq-theme">
+          <BrowserRouter>
+            <AnimatedPage>
+              <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
@@ -135,11 +138,17 @@ export default function App() {
                   </AdminGuard>
                 </AppLayout>
               } />
-            </Routes>
-          </AnimatedPage>
-        </BrowserRouter>
-        <Toaster />
-      </ThemeProvider>
-    </QueryClientProvider>
+              <Route path="/help" element={
+                <AppLayout>
+                  <Help />
+                </AppLayout>
+              } />
+              </Routes>
+            </AnimatedPage>
+          </BrowserRouter>
+          <Toaster />
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

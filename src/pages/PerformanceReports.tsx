@@ -266,6 +266,7 @@ export default function PerformanceReports() {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
+            {/* Key Metrics */}
             <AnimatedCard className="p-6">
               <h2 className="text-2xl font-semibold text-foreground mb-6">Performance Analytics</h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -275,6 +276,7 @@ export default function PerformanceReports() {
                   </div>
                   <div className="text-2xl font-bold text-foreground mb-1">89%</div>
                   <div className="text-sm text-muted-foreground">Average Efficiency</div>
+                  <div className="text-xs text-green-600 mt-1">+3% vs last week</div>
                 </div>
                 <div className="text-center">
                   <div className="p-3 bg-green-100 rounded-lg w-fit mx-auto mb-3">
@@ -282,6 +284,7 @@ export default function PerformanceReports() {
                   </div>
                   <div className="text-2xl font-bold text-foreground mb-1">+12%</div>
                   <div className="text-sm text-muted-foreground">vs Last Month</div>
+                  <div className="text-xs text-green-600 mt-1">Improving trend</div>
                 </div>
                 <div className="text-center">
                   <div className="p-3 bg-blue-100 rounded-lg w-fit mx-auto mb-3">
@@ -289,6 +292,7 @@ export default function PerformanceReports() {
                   </div>
                   <div className="text-2xl font-bold text-foreground mb-1">94%</div>
                   <div className="text-sm text-muted-foreground">On-Time Rate</div>
+                  <div className="text-xs text-blue-600 mt-1">Above target</div>
                 </div>
                 <div className="text-center">
                   <div className="p-3 bg-yellow-100 rounded-lg w-fit mx-auto mb-3">
@@ -296,7 +300,102 @@ export default function PerformanceReports() {
                   </div>
                   <div className="text-2xl font-bold text-foreground mb-1">$9.3K</div>
                   <div className="text-sm text-muted-foreground">Monthly Savings</div>
+                  <div className="text-xs text-yellow-600 mt-1">+$1.2K vs target</div>
                 </div>
+              </div>
+            </AnimatedCard>
+
+            {/* Detailed Analytics */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              <AnimatedCard className="p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Efficiency Trends</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">This Week</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-32 bg-muted rounded-full h-2">
+                        <div className="bg-primary h-2 rounded-full" style={{ width: '89%' }}></div>
+                      </div>
+                      <span className="text-sm font-medium">89%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Last Week</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-32 bg-muted rounded-full h-2">
+                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: '86%' }}></div>
+                      </div>
+                      <span className="text-sm font-medium">86%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Last Month</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-32 bg-muted rounded-full h-2">
+                        <div className="bg-green-500 h-2 rounded-full" style={{ width: '77%' }}></div>
+                      </div>
+                      <span className="text-sm font-medium">77%</span>
+                    </div>
+                  </div>
+                </div>
+              </AnimatedCard>
+
+              <AnimatedCard className="p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Cost Breakdown</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Fuel Costs</span>
+                    <span className="text-sm font-medium">$2,340</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Driver Wages</span>
+                    <span className="text-sm font-medium">$4,560</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Vehicle Maintenance</span>
+                    <span className="text-sm font-medium">$890</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Other Expenses</span>
+                    <span className="text-sm font-medium">$1,210</span>
+                  </div>
+                  <div className="border-t pt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-foreground">Total</span>
+                      <span className="text-sm font-semibold text-foreground">$9,000</span>
+                    </div>
+                  </div>
+                </div>
+              </AnimatedCard>
+            </div>
+
+            {/* Performance by Driver */}
+            <AnimatedCard className="p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Performance by Driver</h3>
+              <div className="space-y-4">
+                {[
+                  { name: "John Smith", efficiency: 94, routes: 23, onTime: 98 },
+                  { name: "Sarah Johnson", efficiency: 91, routes: 19, onTime: 95 },
+                  { name: "Mike Chen", efficiency: 87, routes: 21, onTime: 92 },
+                  { name: "Emily Rodriguez", efficiency: 89, routes: 18, onTime: 96 }
+                ].map((driver, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div>
+                      <p className="font-medium text-foreground">{driver.name}</p>
+                      <p className="text-sm text-muted-foreground">{driver.routes} routes completed</p>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-foreground">{driver.efficiency}%</p>
+                        <p className="text-xs text-muted-foreground">Efficiency</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-foreground">{driver.onTime}%</p>
+                        <p className="text-xs text-muted-foreground">On-Time</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </AnimatedCard>
           </TabsContent>

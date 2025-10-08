@@ -35,6 +35,7 @@ const navigationItems = {
     { name: 'User Management', href: '/admin/users', icon: Users },
     { name: 'Integrations', href: '/integrations', icon: Settings },
     { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Help', href: '/help', icon: HelpCircle },
     { name: 'About', href: '/about', icon: HelpCircle },
   ],
   dispatcher: [
@@ -42,12 +43,14 @@ const navigationItems = {
     { name: 'Route Overview', href: '/route/1', icon: Route },
     { name: 'Performance Reports', href: '/reports', icon: BarChart3 },
     { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Help', href: '/help', icon: HelpCircle },
     { name: 'About', href: '/about', icon: HelpCircle },
   ],
   driver: [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'My Routes', href: '/route/1', icon: Route },
     { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Help', href: '/help', icon: HelpCircle },
     { name: 'About', href: '/about', icon: HelpCircle },
   ],
 };
@@ -89,6 +92,9 @@ export function MainNav({
     }
     if (path === '/settings') {
       return location.pathname === '/settings';
+    }
+    if (path === '/help') {
+      return location.pathname === '/help';
     }
     if (path === '/about') {
       return location.pathname === '/about';

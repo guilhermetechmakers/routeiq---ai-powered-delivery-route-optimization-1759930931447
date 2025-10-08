@@ -41,6 +41,7 @@ export default function Login() {
       navigate("/dashboard");
     } catch (error) {
       // Error is handled by the mutation
+      console.error("Login error:", error);
     }
   };
 

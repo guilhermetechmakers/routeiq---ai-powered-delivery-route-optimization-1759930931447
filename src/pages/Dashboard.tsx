@@ -27,7 +27,11 @@ import {
   AlertTriangle,
   Cloud,
   Wifi,
-  WifiOff
+  WifiOff,
+  Users,
+  Settings,
+  FileText,
+  ExternalLink
 } from "lucide-react";
 
 // Mock notifications - in real app this would come from notifications API
@@ -93,6 +97,9 @@ export default function Dashboard() {
   const [isSimulationDialogOpen, setIsSimulationDialogOpen] = useState(false);
   const [liveNotifications, setLiveNotifications] = useState<any[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
+  
+  // Mock user role - in real app this would come from auth context
+  const userRole = 'admin'; // This should be dynamic based on actual user
   
   // Fetch live data
   const { data: routesData, isLoading: routesLoading, error: routesError } = useRoutes();
@@ -321,14 +328,32 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${userRole === 'admin' ? 'grid-cols-5' : 'grid-cols-4'}`}>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="routes">Routes</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            {userRole === 'admin' && (
+              <TabsTrigger value="admin">Admin</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            {/* Role-specific welcome message */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold text-foreground mb-2">
+                Welcome back, {userRole === 'admin' ? 'Administrator' : userRole === 'dispatcher' ? 'Dispatcher' : 'Driver'}!
+              </h2>
+              <p className="text-muted-foreground">
+                {userRole === 'admin' 
+                  ? 'Monitor system performance, manage users, and oversee all operations.'
+                  : userRole === 'dispatcher' 
+                  ? 'Optimize routes, track deliveries, and manage your fleet efficiently.'
+                  : 'View your assigned routes, update delivery status, and stay connected.'
+                }
+              </p>
+            </div>
+
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Routes List */}
               <div className="lg:col-span-2">
@@ -581,6 +606,99 @@ export default function Dashboard() {
               <p className="text-muted-foreground">Analytics dashboard will be implemented here.</p>
             </AnimatedCard>
           </TabsContent>
+
+          {userRole === 'admin' && (
+            <TabsContent value="admin" className="space-y-6">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <AnimatedCard className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                      <p className="text-3xl font-bold text-foreground">247</p>
+                    </div>
+                    <div className="p-3 bg-blue-100 rounded-lg">
+                      <Users className="h-6 w-6 text-blue-600" />
+                    </div>
+                  </div>
+                </AnimatedCard>
+
+                <AnimatedCard className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">System Health</p>
+                      <p className="text-3xl font-bold text-green-600">99.9%</p>
+                    </div>
+                    <div className="p-3 bg-green-100 rounded-lg">
+                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    </div>
+                  </div>
+                </AnimatedCard>
+
+                <AnimatedCard className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">API Calls Today</p>
+                      <p className="text-3xl font-bold text-foreground">12.4K</p>
+                    </div>
+                    <div className="p-3 bg-purple-100 rounded-lg">
+                      <Zap className="h-6 w-6 text-purple-600" />
+                    </div>
+                  </div>
+                </AnimatedCard>
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-6">
+                <AnimatedCard className="p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Recent System Events</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-green-50 border border-green-200">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <div>
+                        <p className="text-sm font-medium text-green-800">System backup completed</p>
+                        <p className="text-xs text-green-600">2 minutes ago</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                      <Users className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-800">New user registered</p>
+                        <p className="text-xs text-blue-600">15 minutes ago</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                      <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                      <div>
+                        <p className="text-sm font-medium text-yellow-800">High API usage detected</p>
+                        <p className="text-xs text-yellow-600">1 hour ago</p>
+                      </div>
+                    </div>
+                  </div>
+                </AnimatedCard>
+
+                <AnimatedCard className="p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
+                  <div className="space-y-3">
+                    <Button variant="outline" className="w-full justify-start">
+                      <Users className="h-4 w-4 mr-2" />
+                      Manage Users
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start">
+                      <Settings className="h-4 w-4 mr-2" />
+                      System Settings
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start">
+                      <FileText className="h-4 w-4 mr-2" />
+                      View Logs
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      API Management
+                    </Button>
+                  </div>
+                </AnimatedCard>
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
