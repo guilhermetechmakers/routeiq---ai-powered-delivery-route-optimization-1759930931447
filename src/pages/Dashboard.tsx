@@ -10,6 +10,7 @@ import { useRoutes, useOptimizeRoute } from "@/hooks/useRoutes";
 import { useWeatherAlerts, useRouteWeatherImpact } from "@/hooks/useWeather";
 import { useWebSocket } from "@/api/websocket";
 import { SimulationDialog } from "@/components/SimulationDialog";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Truck, 
   Clock, 
@@ -98,8 +99,9 @@ export default function Dashboard() {
   const [liveNotifications, setLiveNotifications] = useState<any[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
   
-  // Mock user role - in real app this would come from auth context
-  const userRole = 'admin'; // This should be dynamic based on actual user
+  // Get user role from auth context
+  const { user } = useAuth();
+  const userRole = user?.role || 'driver';
   
   // Fetch live data
   const { data: routesData, isLoading: routesLoading, error: routesError } = useRoutes();
@@ -342,7 +344,7 @@ export default function Dashboard() {
             {/* Role-specific welcome message */}
             <div className="mb-6">
               <h2 className="text-2xl font-semibold text-foreground mb-2">
-                Welcome back, {userRole === 'admin' ? 'Administrator' : userRole === 'dispatcher' ? 'Dispatcher' : 'Driver'}!
+                Welcome back, {user?.full_name || (userRole === 'admin' ? 'Administrator' : userRole === 'dispatcher' ? 'Dispatcher' : 'Driver')}!
               </h2>
               <p className="text-muted-foreground">
                 {userRole === 'admin' 
@@ -353,6 +355,94 @@ export default function Dashboard() {
                 }
               </p>
             </div>
+
+            {/* Role-specific quick actions */}
+            {userRole === 'admin' && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <AnimatedCard className="p-4 cursor-pointer hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <Users className="h-8 w-8 text-blue-500" />
+                      <div>
+                        <h4 className="font-medium">Manage Users</h4>
+                        <p className="text-sm text-muted-foreground">Add, edit, or remove users</p>
+                      </div>
+                    </div>
+                  </AnimatedCard>
+                  <AnimatedCard className="p-4 cursor-pointer hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <Settings className="h-8 w-8 text-green-500" />
+                      <div>
+                        <h4 className="font-medium">System Settings</h4>
+                        <p className="text-sm text-muted-foreground">Configure system preferences</p>
+                      </div>
+                    </div>
+                  </AnimatedCard>
+                  <AnimatedCard className="p-4 cursor-pointer hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <FileText className="h-8 w-8 text-purple-500" />
+                      <div>
+                        <h4 className="font-medium">View Reports</h4>
+                        <p className="text-sm text-muted-foreground">Generate performance reports</p>
+                      </div>
+                    </div>
+                  </AnimatedCard>
+                </div>
+              </div>
+            )}
+
+            {userRole === 'dispatcher' && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Today's Focus</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <AnimatedCard className="p-4 cursor-pointer hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <Truck className="h-8 w-8 text-blue-500" />
+                      <div>
+                        <h4 className="font-medium">Optimize Routes</h4>
+                        <p className="text-sm text-muted-foreground">AI-powered route optimization</p>
+                      </div>
+                    </div>
+                  </AnimatedCard>
+                  <AnimatedCard className="p-4 cursor-pointer hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <BarChart3 className="h-8 w-8 text-green-500" />
+                      <div>
+                        <h4 className="font-medium">Performance Analytics</h4>
+                        <p className="text-sm text-muted-foreground">Track delivery metrics</p>
+                      </div>
+                    </div>
+                  </AnimatedCard>
+                </div>
+              </div>
+            )}
+
+            {userRole === 'driver' && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">My Tasks</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <AnimatedCard className="p-4 cursor-pointer hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <Navigation className="h-8 w-8 text-blue-500" />
+                      <div>
+                        <h4 className="font-medium">Current Route</h4>
+                        <p className="text-sm text-muted-foreground">View today's delivery route</p>
+                      </div>
+                    </div>
+                  </AnimatedCard>
+                  <AnimatedCard className="p-4 cursor-pointer hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <Clock className="h-8 w-8 text-green-500" />
+                      <div>
+                        <h4 className="font-medium">Update Status</h4>
+                        <p className="text-sm text-muted-foreground">Mark deliveries as complete</p>
+                      </div>
+                    </div>
+                  </AnimatedCard>
+                </div>
+              </div>
+            )}
 
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Routes List */}

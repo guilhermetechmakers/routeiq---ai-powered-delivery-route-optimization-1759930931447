@@ -7,6 +7,7 @@ import { IntegrationDetail } from '@/components/integrations/IntegrationDetail';
 import { EditIntegrationDialog } from '@/components/integrations/EditIntegrationDialog';
 import { RoleGuard } from '@/components/guards/RoleGuard';
 import { useIntegrations } from '@/hooks/useIntegrations';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Integration } from '@/types/integration';
 
 export default function Integrations() {
@@ -14,8 +15,9 @@ export default function Integrations() {
   const [editingIntegration, setEditingIntegration] = useState<Integration | null>(null);
   const [activeTab, setActiveTab] = useState('list');
 
-  // Mock user role - in real app this would come from auth context
-  const userRole = 'admin' as const;
+  // Get user role from auth context
+  const { user } = useAuth();
+  const userRole = user?.role || 'driver';
 
   const { data: integrationsResponse } = useIntegrations();
   const integrations = integrationsResponse?.data || [];

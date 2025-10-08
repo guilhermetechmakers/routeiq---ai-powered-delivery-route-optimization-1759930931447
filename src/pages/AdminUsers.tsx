@@ -7,6 +7,7 @@ import { UserDetail } from '@/components/admin/UserDetail';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { RoleGuard } from '@/components/guards/RoleGuard';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
+import { useAuth } from '@/contexts/AuthContext';
 import type { User } from '@/types/user';
 
 export default function AdminUsers() {
@@ -14,8 +15,9 @@ export default function AdminUsers() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState('list');
 
-  // Mock user role - in real app this would come from auth context
-  const userRole = 'admin' as const;
+  // Get user role from auth context
+  const { user } = useAuth();
+  const userRole = user?.role || 'driver';
 
   const { data: usersResponse } = useAdminUsers();
   const users = usersResponse?.data || [];
