@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
 import { AnimatedPage } from "@/components/AnimatedPage";
+import { MainNav } from "@/components/layout/MainNav";
 
 // Import pages
 import Home from "@/pages/Home";
@@ -31,6 +32,37 @@ const queryClient = new QueryClient({
   },
 });
 
+// Layout wrapper component
+function AppLayout({ children }: { children: React.ReactNode }) {
+  // Mock user data - in real app this would come from auth context
+  const mockUser = {
+    role: 'dispatcher' as const,
+    name: 'John Dispatcher',
+    avatar: undefined,
+    notificationCount: 3,
+  };
+
+  const handleLogout = () => {
+    // In real app, this would clear auth tokens and redirect
+    console.log('Logging out...');
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <MainNav
+        userRole={mockUser.role}
+        userName={mockUser.name}
+        userAvatar={mockUser.avatar}
+        notificationCount={mockUser.notificationCount}
+        onLogout={handleLogout}
+      />
+      <main className="flex-1">
+        {children}
+      </main>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -41,16 +73,41 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/route/:id" element={<RouteOverview />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/about" element={<About />} />
               <Route path="/verify-email" element={<EmailVerification />} />
               <Route path="/reset-password" element={<PasswordReset />} />
-              <Route path="/reports" element={<PerformanceReports />} />
-              <Route path="/profile" element={<UserProfile />} />
               <Route path="/500" element={<ServerError />} />
               <Route path="*" element={<NotFound />} />
+              {/* Protected routes with navigation */}
+              <Route path="/dashboard" element={
+                <AppLayout>
+                  <Dashboard />
+                </AppLayout>
+              } />
+              <Route path="/route/:id" element={
+                <AppLayout>
+                  <RouteOverview />
+                </AppLayout>
+              } />
+              <Route path="/settings" element={
+                <AppLayout>
+                  <Settings />
+                </AppLayout>
+              } />
+              <Route path="/about" element={
+                <AppLayout>
+                  <About />
+                </AppLayout>
+              } />
+              <Route path="/reports" element={
+                <AppLayout>
+                  <PerformanceReports />
+                </AppLayout>
+              } />
+              <Route path="/profile" element={
+                <AppLayout>
+                  <UserProfile />
+                </AppLayout>
+              } />
             </Routes>
           </AnimatedPage>
         </BrowserRouter>

@@ -1,11 +1,11 @@
 import { useParams } from "react-router-dom";
 import { motion } from "motion/react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AnimatedCard } from "@/components/AnimatedCard";
-import { AnimatedButton } from "@/components/AnimatedButton";
+import { RouteMap } from "@/components/RouteMap";
+import { useRoute, useOptimizeRoute, useUpdateStop } from "@/hooks/useRoutes";
 import { 
   Truck, 
   MapPin, 
@@ -13,110 +13,30 @@ import {
   Navigation,
   CheckCircle,
   AlertTriangle,
-  Pause,
-  Play,
   MoreHorizontal,
-  Phone,
-  MessageSquare
+  Zap,
+  TrendingUp,
+  ArrowLeft
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
-// Mock data - in real app this would come from API
-const mockRoute = {
-  id: "1",
-  driver: "John Smith",
-  status: "active",
-  vehicle: "Truck #001",
-  totalStops: 8,
-  completedStops: 3,
-  totalDistance: "45.2 km",
-  totalDuration: "2h 15m",
-  efficiency: 87,
-  stops: [
-    {
-      id: "1",
-      address: "123 Main St, Downtown",
-      customer: "ABC Company",
-      phone: "+1 (555) 123-4567",
-      status: "completed",
-      sequence: 1,
-      eta: "09:30 AM",
-      actualArrival: "09:28 AM",
-      instructions: "Leave package at front desk"
-    },
-    {
-      id: "2",
-      address: "456 Oak Ave, Midtown",
-      customer: "XYZ Corp",
-      phone: "+1 (555) 234-5678",
-      status: "completed",
-      sequence: 2,
-      eta: "10:15 AM",
-      actualArrival: "10:12 AM",
-      instructions: "Ring doorbell twice"
-    },
-    {
-      id: "3",
-      address: "789 Pine St, Uptown",
-      customer: "DEF Industries",
-      phone: "+1 (555) 345-6789",
-      status: "completed",
-      sequence: 3,
-      eta: "11:00 AM",
-      actualArrival: "10:58 AM",
-      instructions: "Call customer upon arrival"
-    },
-    {
-      id: "4",
-      address: "321 Elm St, Downtown",
-      customer: "GHI Solutions",
-      phone: "+1 (555) 456-7890",
-      status: "in_progress",
-      sequence: 4,
-      eta: "11:45 AM",
-      instructions: "Signature required"
-    },
-    {
-      id: "5",
-      address: "654 Maple Ave, Westside",
-      customer: "JKL Enterprises",
-      phone: "+1 (555) 567-8901",
-      status: "pending",
-      sequence: 5,
-      eta: "12:30 PM",
-      instructions: "Leave with neighbor if not home"
-    },
-    {
-      id: "6",
-      address: "987 Cedar Blvd, Eastside",
-      customer: "MNO Group",
-      phone: "+1 (555) 678-9012",
-      status: "pending",
-      sequence: 6,
-      eta: "1:15 PM",
-      instructions: "Deliver to loading dock"
-    },
-    {
-      id: "7",
-      address: "147 Birch St, Northside",
-      customer: "PQR Ltd",
-      phone: "+1 (555) 789-0123",
-      status: "pending",
-      sequence: 7,
-      eta: "2:00 PM",
-      instructions: "Call 30 minutes before arrival"
-    },
-    {
-      id: "8",
-      address: "258 Spruce Dr, Southside",
-      customer: "STU Inc",
-      phone: "+1 (555) 890-1234",
-      status: "pending",
-      sequence: 8,
-      eta: "2:45 PM",
-      instructions: "Photo required upon delivery"
-    }
-  ]
-};
+// Mock notifications - in real app this would come from notifications API
+const mockNotifications = [
+  {
+    id: "1",
+    type: "traffic_alert",
+    title: "Traffic Alert",
+    message: "Heavy traffic on Highway 101 - consider alternative routes",
+    time: "5 minutes ago"
+  },
+  {
+    id: "2",
+    type: "weather_alert",
+    title: "Weather Warning",
+    message: "Rain expected in the next hour - prepare for wet conditions",
+    time: "15 minutes ago"
+  }
+];
 
 const getStatusIcon = (status: string) => {
   switch (status) {
@@ -124,8 +44,6 @@ const getStatusIcon = (status: string) => {
       return <CheckCircle className="h-4 w-4 text-green-500" />;
     case "in_progress":
       return <Navigation className="h-4 w-4 text-blue-500" />;
-    case "pending":
-      return <Clock className="h-4 w-4 text-gray-500" />;
     case "failed":
       return <AlertTriangle className="h-4 w-4 text-red-500" />;
     default:
@@ -139,8 +57,6 @@ const getStatusColor = (status: string) => {
       return "bg-green-100 text-green-800 border-green-200";
     case "in_progress":
       return "bg-blue-100 text-blue-800 border-blue-200";
-    case "pending":
-      return "bg-gray-100 text-gray-800 border-gray-200";
     case "failed":
       return "bg-red-100 text-red-800 border-red-200";
     default:
@@ -150,178 +66,230 @@ const getStatusColor = (status: string) => {
 
 export default function RouteOverview() {
   const { id } = useParams<{ id: string }>();
-  const progress = (mockRoute.completedStops / mockRoute.totalStops) * 100;
+  const { data: route, isLoading, error } = useRoute(id || "");
+  const optimizeRoute = useOptimizeRoute();
+  const updateStop = useUpdateStop();
+
+  const handleOptimizeRoute = () => {
+    if (id) {
+      optimizeRoute.mutate(id);
+    }
+  };
+
+  const handleUpdateStop = (stopId: string, updates: any) => {
+    if (id) {
+      updateStop.mutate({ routeId: id, stopId, updates });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading route details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !route) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <p className="text-destructive">Failed to load route details</p>
+          <Link to="/dashboard" className="text-primary hover:underline">
+            Return to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const completedStops = route.stops.filter(stop => stop.status === 'completed').length;
+  const progressPercentage = (completedStops / route.stops.length) * 100;
+  const efficiency = route.metadata?.optimization_score || 0;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Truck className="h-8 w-8 text-primary" />
-                <span className="text-2xl font-bold text-foreground">RouteIQ</span>
-              </div>
-              <div className="hidden md:block">
-                <h1 className="text-xl font-semibold text-foreground">Route #{id}</h1>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Link to="/dashboard">
               <Button variant="outline" size="sm">
-                <Pause className="h-4 w-4 mr-2" />
-                Pause Route
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
               </Button>
-              <AnimatedButton size="sm">
-                <Play className="h-4 w-4 mr-2" />
-                Resume Route
-              </AnimatedButton>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">{route.name}</h1>
+              <p className="text-muted-foreground">Driver ID: {route.driver_id}</p>
             </div>
           </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              onClick={handleOptimizeRoute}
+              disabled={optimizeRoute.isPending}
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              {optimizeRoute.isPending ? 'Optimizing...' : 'Optimize Route'}
+            </Button>
+            <Button variant="outline">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </header>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Route Info */}
-          <div className="lg:col-span-1">
-            <AnimatedCard className="p-6 mb-6">
-              <h2 className="text-xl font-semibold text-foreground mb-4">Route Details</h2>
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Driver:</span>
-                  <span className="font-medium">{mockRoute.driver}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vehicle:</span>
-                  <span className="font-medium">{mockRoute.vehicle}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Status:</span>
-                  <Badge className={getStatusColor(mockRoute.status)}>
-                    {mockRoute.status}
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Distance:</span>
-                  <span className="font-medium">{mockRoute.totalDistance}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Duration:</span>
-                  <span className="font-medium">{mockRoute.totalDuration}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Efficiency:</span>
-                  <span className="font-medium">{mockRoute.efficiency}%</span>
-                </div>
+        {/* Route Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <AnimatedCard className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Status</p>
+                <Badge className={getStatusColor(route.status)}>
+                  {route.status}
+                </Badge>
               </div>
-            </AnimatedCard>
+              <Truck className="h-8 w-8 text-primary" />
+            </div>
+          </AnimatedCard>
 
-            <AnimatedCard className="p-6">
-              <h2 className="text-xl font-semibold text-foreground mb-4">Progress</h2>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span>Completed Stops</span>
-                    <span>{mockRoute.completedStops}/{mockRoute.totalStops}</span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{Math.round(progress)}%</div>
-                  <div className="text-sm text-muted-foreground">Complete</div>
-                </div>
+          <AnimatedCard className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Progress</p>
+                <p className="text-2xl font-bold">{completedStops}/{route.stops.length}</p>
+                <Progress value={progressPercentage} className="mt-2" />
               </div>
-            </AnimatedCard>
+              <CheckCircle className="h-8 w-8 text-green-500" />
+            </div>
+          </AnimatedCard>
+
+          <AnimatedCard className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Distance</p>
+                <p className="text-2xl font-bold">{route.total_distance.toFixed(1)}km</p>
+              </div>
+              <MapPin className="h-8 w-8 text-blue-500" />
+            </div>
+          </AnimatedCard>
+
+          <AnimatedCard className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Efficiency</p>
+                <p className="text-2xl font-bold">{efficiency}%</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-orange-500" />
+            </div>
+          </AnimatedCard>
+        </div>
+
+        {/* Map and Stops */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Map */}
+          <div>
+            <RouteMap route={route} height="500px" />
           </div>
 
           {/* Stops List */}
-          <div className="lg:col-span-2">
+          <div>
             <AnimatedCard className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-foreground">Delivery Stops</h2>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    View Map
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
+                <h2 className="text-xl font-semibold text-foreground">Route Stops</h2>
+                <Badge variant="outline">
+                  {completedStops} of {route.stops.length} completed
+                </Badge>
               </div>
 
               <div className="space-y-4">
-                {mockRoute.stops.map((stop, index) => (
+                {route.stops.map((stop, index) => (
                   <motion.div
                     key={stop.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`p-4 rounded-lg border transition-all hover:shadow-md ${
+                      stop.status === 'in_progress' ? 'ring-2 ring-blue-200 bg-blue-50' : ''
+                    }`}
                   >
-                    <Card className={`p-4 ${
-                      stop.status === 'in_progress' ? 'ring-2 ring-primary' : ''
-                    }`}>
-                      <div className="flex items-start space-x-4">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-primary">
-                              {stop.sequence}
-                            </span>
-                          </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium text-muted-foreground">#{stop.sequence}</span>
+                          {getStatusIcon(stop.status)}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              {getStatusIcon(stop.status)}
-                              <h3 className="font-medium text-foreground">
-                                {stop.customer}
-                              </h3>
-                              <Badge className={getStatusColor(stop.status)}>
-                                {stop.status.replace('_', ' ')}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {stop.eta}
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {stop.address}
-                          </p>
-                          {stop.instructions && (
-                            <p className="text-xs text-muted-foreground mb-2">
-                              <strong>Instructions:</strong> {stop.instructions}
-                            </p>
+                        <div>
+                          <p className="font-medium">{stop.address}</p>
+                          {stop.customer_name && (
+                            <p className="text-sm text-muted-foreground">{stop.customer_name}</p>
                           )}
-                          {stop.actualArrival && (
-                            <p className="text-xs text-green-600">
-                              <strong>Arrived:</strong> {stop.actualArrival}
-                            </p>
+                          {stop.delivery_instructions && (
+                            <p className="text-xs text-muted-foreground mt-1">{stop.delivery_instructions}</p>
                           )}
-                          <div className="flex items-center space-x-4 mt-3">
-                            <Button variant="ghost" size="sm">
-                              <Phone className="h-4 w-4 mr-1" />
-                              Call
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <MessageSquare className="h-4 w-4 mr-1" />
-                              Message
-                            </Button>
-                            {stop.status === 'in_progress' && (
-                              <AnimatedButton size="sm">
-                                Mark Complete
-                              </AnimatedButton>
-                            )}
-                          </div>
                         </div>
                       </div>
-                    </Card>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">{stop.estimated_arrival}</p>
+                        <Badge className={getStatusColor(stop.status)}>
+                          {stop.status}
+                        </Badge>
+                        {stop.status === 'in_progress' && (
+                          <div className="mt-2 space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUpdateStop(stop.id, { status: 'completed' })}
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Complete
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUpdateStop(stop.id, { status: 'failed' })}
+                            >
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Failed
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </motion.div>
                 ))}
               </div>
             </AnimatedCard>
           </div>
         </div>
+
+        {/* Notifications */}
+        {mockNotifications.length > 0 && (
+          <div className="mt-8">
+            <AnimatedCard className="p-6">
+              <h2 className="text-xl font-semibold text-foreground mb-4">Route Alerts</h2>
+              <div className="space-y-3">
+                {mockNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className="flex items-start space-x-3 p-3 rounded-lg bg-yellow-50 border border-yellow-200"
+                  >
+                    <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-yellow-800">{notification.title}</h4>
+                      <p className="text-sm text-yellow-700">{notification.message}</p>
+                      <p className="text-xs text-yellow-600 mt-1">{notification.time}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </AnimatedCard>
+          </div>
+        )}
       </div>
     </div>
   );

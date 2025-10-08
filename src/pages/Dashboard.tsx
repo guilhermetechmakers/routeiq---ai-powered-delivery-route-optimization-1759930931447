@@ -6,12 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { AnimatedCard } from "@/components/AnimatedCard";
 import { AnimatedButton } from "@/components/AnimatedButton";
+import { useRoutes, useOptimizeRoute } from "@/hooks/useRoutes";
+import { SimulationDialog } from "@/components/SimulationDialog";
 import { 
   Truck, 
   Clock, 
   BarChart3, 
-  Bell, 
-  Settings, 
   Plus,
   Filter,
   Search,
@@ -19,46 +19,12 @@ import {
   Navigation,
   CheckCircle,
   XCircle,
-  Pause
+  Pause,
+  Zap,
+  TrendingUp
 } from "lucide-react";
 
-// Mock data - in real app this would come from API
-const mockRoutes = [
-  {
-    id: "1",
-    driver: "John Smith",
-    status: "active",
-    stops: 8,
-    completed: 3,
-    eta: "2h 15m",
-    distance: "45.2 km",
-    efficiency: 87,
-    vehicle: "Truck #001"
-  },
-  {
-    id: "2", 
-    driver: "Sarah Johnson",
-    status: "planned",
-    stops: 12,
-    completed: 0,
-    eta: "3h 30m",
-    distance: "67.8 km",
-    efficiency: 92,
-    vehicle: "Van #002"
-  },
-  {
-    id: "3",
-    driver: "Mike Chen",
-    status: "paused",
-    stops: 6,
-    completed: 2,
-    eta: "1h 45m",
-    distance: "32.1 km",
-    efficiency: 78,
-    vehicle: "Truck #003"
-  }
-];
-
+// Mock notifications - in real app this would come from notifications API
 const mockNotifications = [
   {
     id: "1",
@@ -85,15 +51,6 @@ const mockNotifications = [
     unread: false
   }
 ];
-
-const mockStats = {
-  totalRoutes: 24,
-  activeRoutes: 8,
-  completedToday: 156,
-  totalDistance: 1247.5,
-  avgEfficiency: 89,
-  onTimeRate: 94
-};
 
 const getStatusIcon = (status: string) => {
   switch (status) {
@@ -127,39 +84,56 @@ const getStatusColor = (status: string) => {
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [isSimulationDialogOpen, setIsSimulationDialogOpen] = useState(false);
+  
+  // Fetch live data
+  const { data: routesData, isLoading: routesLoading, error: routesError } = useRoutes();
+  const optimizeRoute = useOptimizeRoute();
+
+  // Calculate stats from live data
+  const routes = routesData?.data || [];
+  
+  const stats = {
+    totalRoutes: routes.length,
+    activeRoutes: routes.filter(route => route.status === 'active').length,
+    completedToday: routes.filter(route => route.status === 'completed').length,
+    totalDistance: routes.reduce((sum, route) => sum + route.total_distance, 0),
+    avgEfficiency: routes.length > 0 ? Math.round(routes.reduce((sum, route) => sum + (route.metadata?.optimization_score || 0), 0) / routes.length) : 0,
+    onTimeRate: 94 // This would come from analytics API
+  };
+
+  const handleOptimizeRoute = (routeId: string) => {
+    optimizeRoute.mutate(routeId);
+  };
+
+  const handleRunSimulation = () => {
+    setIsSimulationDialogOpen(true);
+  };
+
+  if (routesLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (routesError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <p className="text-destructive">Failed to load dashboard data</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Truck className="h-8 w-8 text-primary" />
-                <span className="text-2xl font-bold text-foreground">RouteIQ</span>
-              </div>
-              <div className="hidden md:block">
-                <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <Bell className="h-4 w-4 mr-2" />
-                Notifications
-                <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
-                  3
-                </Badge>
-              </Button>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -172,7 +146,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Routes</p>
-                  <p className="text-3xl font-bold text-foreground">{mockStats.totalRoutes}</p>
+                  <p className="text-3xl font-bold text-foreground">{stats.totalRoutes}</p>
                 </div>
                 <div className="p-3 bg-primary/10 rounded-lg">
                   <Truck className="h-6 w-6 text-primary" />
@@ -190,7 +164,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Active Routes</p>
-                  <p className="text-3xl font-bold text-foreground">{mockStats.activeRoutes}</p>
+                  <p className="text-3xl font-bold text-foreground">{stats.activeRoutes}</p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-lg">
                   <Navigation className="h-6 w-6 text-green-600" />
@@ -208,7 +182,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Completed Today</p>
-                  <p className="text-3xl font-bold text-foreground">{mockStats.completedToday}</p>
+                  <p className="text-3xl font-bold text-foreground">{stats.completedToday}</p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-lg">
                   <CheckCircle className="h-6 w-6 text-blue-600" />
@@ -226,7 +200,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Avg Efficiency</p>
-                  <p className="text-3xl font-bold text-foreground">{mockStats.avgEfficiency}%</p>
+                  <p className="text-3xl font-bold text-foreground">{stats.avgEfficiency}%</p>
                 </div>
                 <div className="p-3 bg-yellow-100 rounded-lg">
                   <BarChart3 className="h-6 w-6 text-yellow-600" />
@@ -257,6 +231,15 @@ export default function Dashboard() {
                         <Filter className="h-4 w-4 mr-2" />
                         Filter
                       </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleRunSimulation}
+                        className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                      >
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        Run Simulation
+                      </Button>
                       <AnimatedButton size="sm">
                         <Plus className="h-4 w-4 mr-2" />
                         New Route
@@ -265,45 +248,70 @@ export default function Dashboard() {
                   </div>
 
                   <div className="space-y-4">
-                    {mockRoutes.map((route, index) => (
-                      <motion.div
-                        key={route.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                      >
-                        <Card className="p-4 hover:shadow-md transition-shadow">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              {getStatusIcon(route.status)}
-                              <div>
-                                <div className="flex items-center space-x-2">
-                                  <h3 className="font-medium text-foreground">Route #{route.id}</h3>
-                                  <Badge className={getStatusColor(route.status)}>
-                                    {route.status}
-                                  </Badge>
+                    {routes.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No routes found</p>
+                      </div>
+                    ) : (
+                      routes.map((route, index) => {
+                        const completedStops = route.stops.filter(stop => stop.status === 'completed').length;
+                        const efficiency = route.metadata?.optimization_score || 0;
+                        
+                        return (
+                          <motion.div
+                            key={route.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.6, delay: index * 0.1 }}
+                          >
+                            <Card className="p-4 hover:shadow-md transition-shadow">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-4">
+                                  {getStatusIcon(route.status)}
+                                  <div>
+                                    <div className="flex items-center space-x-2">
+                                      <h3 className="font-medium text-foreground">{route.name}</h3>
+                                      <Badge className={getStatusColor(route.status)}>
+                                        {route.status}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                      Driver ID: {route.driver_id} • {route.stops.length} stops
+                                    </p>
+                                  </div>
                                 </div>
-                                <p className="text-sm text-muted-foreground">{route.driver} • {route.vehicle}</p>
+                                <div className="text-right">
+                                  <div className="text-sm font-medium text-foreground">
+                                    {completedStops}/{route.stops.length} stops
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {Math.round(route.total_duration / 60)}min • {route.total_distance.toFixed(1)}km
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {efficiency}% efficiency
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleOptimizeRoute(route.id)}
+                                    disabled={optimizeRoute.isPending}
+                                  >
+                                    <Zap className="h-4 w-4 mr-1" />
+                                    Optimize
+                                  </Button>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm font-medium text-foreground">
-                                {route.completed}/{route.stops} stops
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {route.eta} • {route.distance}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {route.efficiency}% efficiency
-                              </div>
-                            </div>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </Card>
-                      </motion.div>
-                    ))}
+                            </Card>
+                          </motion.div>
+                        );
+                      })
+                    )}
                   </div>
                 </AnimatedCard>
               </div>
@@ -393,6 +401,12 @@ export default function Dashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Simulation Dialog */}
+      <SimulationDialog
+        isOpen={isSimulationDialogOpen}
+        onClose={() => setIsSimulationDialogOpen(false)}
+      />
     </div>
   );
 }
