@@ -30,7 +30,7 @@ interface MainNavProps {
 const navigationItems = {
   admin: [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Route Overview', href: '/routes', icon: Route },
+    { name: 'Route Overview', href: '/route/1', icon: Route },
     { name: 'Performance Reports', href: '/reports', icon: BarChart3 },
     { name: 'User Management', href: '/admin/users', icon: Users },
     { name: 'Integrations', href: '/integrations', icon: Settings },
@@ -39,14 +39,14 @@ const navigationItems = {
   ],
   dispatcher: [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Route Overview', href: '/routes', icon: Route },
+    { name: 'Route Overview', href: '/route/1', icon: Route },
     { name: 'Performance Reports', href: '/reports', icon: BarChart3 },
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'About', href: '/about', icon: HelpCircle },
   ],
   driver: [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'My Routes', href: '/my-routes', icon: Route },
+    { name: 'My Routes', href: '/route/1', icon: Route },
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'About', href: '/about', icon: HelpCircle },
   ],
@@ -75,8 +75,23 @@ export function MainNav({
     if (path === '/dashboard') {
       return location.pathname === '/dashboard';
     }
-    if (path === '/routes') {
-      return location.pathname.startsWith('/route/') || location.pathname === '/routes';
+    if (path.startsWith('/route/')) {
+      return location.pathname.startsWith('/route/');
+    }
+    if (path === '/reports') {
+      return location.pathname === '/reports';
+    }
+    if (path === '/admin/users') {
+      return location.pathname === '/admin/users';
+    }
+    if (path === '/integrations') {
+      return location.pathname === '/integrations';
+    }
+    if (path === '/settings') {
+      return location.pathname === '/settings';
+    }
+    if (path === '/about') {
+      return location.pathname === '/about';
     }
     return location.pathname === path;
   };

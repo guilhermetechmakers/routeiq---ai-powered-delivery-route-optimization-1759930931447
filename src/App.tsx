@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
 import { AnimatedPage } from "@/components/AnimatedPage";
 import { MainNav } from "@/components/layout/MainNav";
+import { AdminGuard, DispatcherGuard, DriverGuard } from "@/components/guards/RoleGuard";
 
 // Import pages
 import Home from "@/pages/Home";
@@ -82,17 +83,23 @@ export default function App() {
               {/* Protected routes with navigation */}
               <Route path="/dashboard" element={
                 <AppLayout>
-                  <Dashboard />
+                  <DriverGuard>
+                    <Dashboard />
+                  </DriverGuard>
                 </AppLayout>
               } />
               <Route path="/route/:id" element={
                 <AppLayout>
-                  <RouteOverview />
+                  <DriverGuard>
+                    <RouteOverview />
+                  </DriverGuard>
                 </AppLayout>
               } />
               <Route path="/settings" element={
                 <AppLayout>
-                  <Settings />
+                  <DriverGuard>
+                    <Settings />
+                  </DriverGuard>
                 </AppLayout>
               } />
               <Route path="/about" element={
@@ -102,22 +109,30 @@ export default function App() {
               } />
               <Route path="/reports" element={
                 <AppLayout>
-                  <PerformanceReports />
+                  <DispatcherGuard>
+                    <PerformanceReports />
+                  </DispatcherGuard>
                 </AppLayout>
               } />
               <Route path="/profile" element={
                 <AppLayout>
-                  <UserProfile />
+                  <DriverGuard>
+                    <UserProfile />
+                  </DriverGuard>
                 </AppLayout>
               } />
               <Route path="/admin/users" element={
                 <AppLayout>
-                  <AdminUsers />
+                  <AdminGuard>
+                    <AdminUsers />
+                  </AdminGuard>
                 </AppLayout>
               } />
               <Route path="/integrations" element={
                 <AppLayout>
-                  <Integrations />
+                  <AdminGuard>
+                    <Integrations />
+                  </AdminGuard>
                 </AppLayout>
               } />
             </Routes>

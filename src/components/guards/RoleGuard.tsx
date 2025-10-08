@@ -1,65 +1,73 @@
 import type { ReactNode } from 'react';
-import { Card } from '@/components/ui/card';
-import { Shield, AlertTriangle } from 'lucide-react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useCurrentUser } from '@/hooks/useAuth';
+import type { UserRole } from '@/types/user';
 
 interface RoleGuardProps {
   children: ReactNode;
-  requiredRole: 'admin' | 'dispatcher' | 'driver';
-  userRole?: 'admin' | 'dispatcher' | 'driver';
+  allowedRoles?: UserRole[];
+  requiredRole?: UserRole;
+  userRole?: UserRole;
   fallbackPath?: string;
 }
 
-const roleHierarchy = {
-  admin: 3,
-  dispatcher: 2,
-  driver: 1,
-};
-
 export function RoleGuard({ 
   children, 
-  requiredRole, 
-  userRole = 'driver', 
-  fallbackPath = '/dashboard' 
+  allowedRoles,
+  requiredRole,
+  userRole,
+  fallbackPath = '/login' 
 }: RoleGuardProps) {
-  // Check if user has sufficient role level
-  const hasPermission = roleHierarchy[userRole] >= roleHierarchy[requiredRole];
+  const location = useLocation();
+  const { data: user, isLoading } = useCurrentUser();
 
-  if (!hasPermission) {
+  // Determine the effective role to check
+  const effectiveUserRole = userRole || user?.user?.role;
+  
+  // Determine the allowed roles
+  const effectiveAllowedRoles = allowedRoles || (requiredRole ? [requiredRole] : []);
+
+  // Show loading state while checking authentication
+  if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="p-8 text-center max-w-md mx-auto">
-          <div className="space-y-4">
-            <div className="flex justify-center">
-              <div className="rounded-full bg-red-100 p-3">
-                <Shield className="h-8 w-8 text-red-600" />
-              </div>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">
-                Access Denied
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                You don't have permission to access this page. This feature requires{' '}
-                <span className="font-medium capitalize">{requiredRole}</span> role or higher.
-              </p>
-            </div>
-            <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
-              <AlertTriangle className="h-4 w-4" />
-              <span>Your current role: {userRole}</span>
-            </div>
-            <div className="pt-4">
-              <a
-                href={fallbackPath}
-                className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-              >
-                Go to Dashboard
-              </a>
-            </div>
-          </div>
-        </Card>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Checking permissions...</p>
+        </div>
       </div>
     );
   }
 
+  // If no user or user role not in allowed roles, redirect
+  if (!effectiveUserRole || !effectiveAllowedRoles.includes(effectiveUserRole)) {
+    return <Navigate to={fallbackPath} state={{ from: location }} replace />;
+  }
+
   return <>{children}</>;
+}
+
+// Convenience components for specific roles
+export function AdminGuard({ children, fallbackPath }: { children: ReactNode; fallbackPath?: string }) {
+  return (
+    <RoleGuard allowedRoles={['admin']} fallbackPath={fallbackPath}>
+      {children}
+    </RoleGuard>
+  );
+}
+
+export function DispatcherGuard({ children, fallbackPath }: { children: ReactNode; fallbackPath?: string }) {
+  return (
+    <RoleGuard allowedRoles={['admin', 'dispatcher']} fallbackPath={fallbackPath}>
+      {children}
+    </RoleGuard>
+  );
+}
+
+export function DriverGuard({ children, fallbackPath }: { children: ReactNode; fallbackPath?: string }) {
+  return (
+    <RoleGuard allowedRoles={['admin', 'dispatcher', 'driver']} fallbackPath={fallbackPath}>
+      {children}
+    </RoleGuard>
+  );
 }
