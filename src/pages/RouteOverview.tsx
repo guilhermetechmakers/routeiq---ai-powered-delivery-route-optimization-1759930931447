@@ -193,7 +193,14 @@ export default function RouteOverview() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Map */}
           <div>
-            <RouteMap route={route} height="500px" />
+            <RouteMap 
+              route={route} 
+              height="500px" 
+              showTraffic={true}
+              showWeather={true}
+              onStopClick={(stop) => console.log('Stop clicked:', stop)}
+              onRouteOptimize={handleOptimizeRoute}
+            />
           </div>
 
           {/* Stops List */}

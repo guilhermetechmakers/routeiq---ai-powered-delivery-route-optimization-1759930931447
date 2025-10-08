@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { AnimatedCard } from "@/components/AnimatedCard";
 import { AnimatedButton } from "@/components/AnimatedButton";
 import { useRoutes, useOptimizeRoute } from "@/hooks/useRoutes";
+import { useWeatherAlerts, useRouteWeatherImpact } from "@/hooks/useWeather";
+import { useWebSocket } from "@/api/websocket";
 import { SimulationDialog } from "@/components/SimulationDialog";
 import { 
   Truck, 
@@ -21,7 +23,11 @@ import {
   XCircle,
   Pause,
   Zap,
-  TrendingUp
+  TrendingUp,
+  AlertTriangle,
+  Cloud,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 
 // Mock notifications - in real app this would come from notifications API
@@ -85,10 +91,31 @@ const getStatusColor = (status: string) => {
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isSimulationDialogOpen, setIsSimulationDialogOpen] = useState(false);
+  const [liveNotifications, setLiveNotifications] = useState<any[]>([]);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting');
   
   // Fetch live data
   const { data: routesData, isLoading: routesLoading, error: routesError } = useRoutes();
   const optimizeRoute = useOptimizeRoute();
+  
+  // WebSocket for real-time updates
+  const ws = useWebSocket();
+  
+  // Weather alerts for the main area (using first route's location as reference)
+  const firstRoute = routesData?.data?.[0];
+  const { data: weatherAlerts } = useWeatherAlerts(
+    firstRoute?.stops?.[0]?.coordinates?.lat || 37.7749,
+    firstRoute?.stops?.[0]?.coordinates?.lng || -122.4194,
+    50,
+    !!firstRoute
+  );
+  
+  // Weather impact for active routes
+  const activeRoutes = routesData?.data?.filter(route => route.status === 'active') || [];
+  useRouteWeatherImpact(
+    activeRoutes[0]?.id || '',
+    activeRoutes.length > 0
+  );
 
   // Calculate stats from live data
   const routes = routesData?.data || [];
@@ -101,6 +128,47 @@ export default function Dashboard() {
     avgEfficiency: routes.length > 0 ? Math.round(routes.reduce((sum, route) => sum + (route.metadata?.optimization_score || 0), 0) / routes.length) : 0,
     onTimeRate: 94 // This would come from analytics API
   };
+
+  // WebSocket event handlers
+  useEffect(() => {
+    const handleConnectionStatus = () => {
+      setConnectionStatus(ws.isConnected() ? 'connected' : 'disconnected');
+    };
+
+    const unsubscribeRouteUpdates = ws.subscribe('route_update', (data) => {
+      // Update route data in real-time
+      console.log('Route update received:', data);
+    });
+
+    const unsubscribeNotifications = ws.subscribe('notification', (data) => {
+      setLiveNotifications(prev => [data, ...prev.slice(0, 9)]); // Keep last 10 notifications
+    });
+
+    const unsubscribeWeatherAlerts = ws.subscribe('weather_alert', (data) => {
+      console.log('Weather alert received:', data);
+    });
+
+    const unsubscribeTrafficAlerts = ws.subscribe('traffic_alert', (data) => {
+      console.log('Traffic alert received:', data);
+    });
+
+    const unsubscribeOptimizationComplete = ws.subscribe('optimization_complete', (data) => {
+      console.log('Optimization complete:', data);
+    });
+
+    // Check connection status periodically
+    const statusInterval = setInterval(handleConnectionStatus, 5000);
+    handleConnectionStatus();
+
+    return () => {
+      unsubscribeRouteUpdates();
+      unsubscribeNotifications();
+      unsubscribeWeatherAlerts();
+      unsubscribeTrafficAlerts();
+      unsubscribeOptimizationComplete();
+      clearInterval(statusInterval);
+    };
+  }, [ws]);
 
   const handleOptimizeRoute = (routeId: string) => {
     optimizeRoute.mutate(routeId);
@@ -135,6 +203,47 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Real-time Status Bar */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-3xl font-bold text-foreground">RouteIQ Dashboard</h1>
+            <div className="flex items-center space-x-2">
+              {connectionStatus === 'connected' ? (
+                <Badge className="bg-green-100 text-green-800 border-green-200">
+                  <Wifi className="h-3 w-3 mr-1" />
+                  Live
+                </Badge>
+              ) : connectionStatus === 'connecting' ? (
+                <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                  <Wifi className="h-3 w-3 mr-1 animate-pulse" />
+                  Connecting...
+                </Badge>
+              ) : (
+                <Badge className="bg-red-100 text-red-800 border-red-200">
+                  <WifiOff className="h-3 w-3 mr-1" />
+                  Offline
+                </Badge>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            {weatherAlerts && weatherAlerts.length > 0 && (
+              <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                {weatherAlerts.length} Weather Alert{weatherAlerts.length > 1 ? 's' : ''}
+              </Badge>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => ws.reconnect()}
+              disabled={connectionStatus === 'connected'}
+            >
+              {connectionStatus === 'connected' ? 'Connected' : 'Reconnect'}
+            </Button>
+          </div>
+        </div>
+
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <motion.div
@@ -316,17 +425,90 @@ export default function Dashboard() {
                 </AnimatedCard>
               </div>
 
-              {/* Notifications */}
+              {/* Live Notifications */}
               <div>
                 <AnimatedCard className="p-6">
-                  <h2 className="text-xl font-semibold text-foreground mb-6">Recent Notifications</h2>
-                  <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold text-foreground">Live Notifications</h2>
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      {liveNotifications.length + mockNotifications.length} total
+                    </Badge>
+                  </div>
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {/* Live notifications */}
+                    {liveNotifications.map((notification, index) => (
+                      <motion.div
+                        key={`live-${notification.id}`}
+                        initial={{ opacity: 0, x: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        transition={{ duration: 0.4, delay: index * 0.05 }}
+                        className="p-3 rounded-lg border bg-blue-50 border-blue-200"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-medium text-blue-900 text-sm">
+                                {notification.title}
+                              </h4>
+                              <Badge className="text-xs bg-blue-100 text-blue-800">
+                                LIVE
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-blue-700 mt-1">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-blue-600 mt-2">
+                              {new Date(notification.timestamp || Date.now()).toLocaleTimeString()}
+                            </p>
+                          </div>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-1 animate-pulse" />
+                        </div>
+                      </motion.div>
+                    ))}
+                    
+                    {/* Weather alerts */}
+                    {weatherAlerts?.map((alert, index) => (
+                      <motion.div
+                        key={`weather-${alert.id}`}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.6, delay: (liveNotifications.length + index) * 0.1 }}
+                        className="p-3 rounded-lg border bg-orange-50 border-orange-200"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <Cloud className="h-4 w-4 text-orange-600" />
+                              <h4 className="font-medium text-orange-900 text-sm">
+                                Weather Alert
+                              </h4>
+                              <Badge className={`text-xs ${
+                                alert.severity === 'severe' ? 'bg-red-100 text-red-800' :
+                                alert.severity === 'high' ? 'bg-orange-100 text-orange-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {alert.severity.toUpperCase()}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-orange-700 mt-1">
+                              {alert.description}
+                            </p>
+                            <p className="text-xs text-orange-600 mt-2">
+                              Impact: {alert.impact_duration} minutes
+                            </p>
+                          </div>
+                          <AlertTriangle className="h-4 w-4 text-orange-600 mt-1" />
+                        </div>
+                      </motion.div>
+                    ))}
+                    
+                    {/* Static notifications */}
                     {mockNotifications.map((notification, index) => (
                       <motion.div
                         key={notification.id}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
+                        transition={{ duration: 0.6, delay: (liveNotifications.length + (weatherAlerts?.length || 0) + index) * 0.1 }}
                       >
                         <div className={`p-3 rounded-lg border ${
                           notification.unread ? 'bg-primary/5 border-primary/20' : 'bg-muted/50'
